@@ -104,7 +104,7 @@
     <div class="stars-container" id="starsContainer">
     </div>
 
-    <div class="planner-container">
+    <div class="planner-container" id="plannerContainer">
         <h2>Travel Planner</h2>
         <div class="input-group">
             <label for="destination">Destination</label>
@@ -118,7 +118,7 @@
             <label for="return-date">Arrival</label>
             <input type="date" id="return-date">
         </div>
-        <button class="submit-btn">Plan My Trip</button>
+        <button class="submit-btn" id="planTripButton">Plan My Trip</button>
     </div>
 
     <script>
@@ -152,6 +152,21 @@
                     star.style.opacity = 0.05;
                 }
             });
+        });
+
+        const planTripButton = document.getElementById('planTripButton');
+        const plannerContainer = document.getElementById('plannerContainer');
+
+        planTripButton.addEventListener('click', () => {
+            const destination = document.getElementById('destination').value;
+            const departureDate = document.getElementById('departure-date').value;
+            const returnDate = document.getElementById('return-date').value;
+
+            console.log(`Destination: ${destination}`);
+            console.log(`Departure Date: ${departureDate}`);
+            console.log(`Return Date: ${returnDate}`);
+
+            plannerContainer.style.display = 'none';
         });
     </script>
 </body>
