@@ -152,6 +152,9 @@
     </div>
 
     <script>
+        // change this to your OpenAI API key
+        const API_KEY = 'YOUR-OPENAI-API-KEY';
+
         const starsContainer = document.getElementById('starsContainer');
         const starCount = Math.ceil(window.innerWidth / 40) * Math.ceil(window.innerHeight / 40) * 1.3;
         const stars = [];
@@ -189,7 +192,7 @@
         const loadingContainer = document.getElementById('loadingContainer');
         const loadingText = document.getElementById('loadingText');
 
-        planTripButton.addEventListener('click', () => {
+        planTripButton.addEventListener('click', async () => {
             const destination = document.getElementById('destination').value;
             const departureDate = new Date(document.getElementById('departure-date').value);
             const returnDate = new Date(document.getElementById('return-date').value);
@@ -198,13 +201,38 @@
             const formattedDepartureDate = departureDate.toLocaleDateString(undefined, options);
             const formattedReturnDate = returnDate.toLocaleDateString(undefined, options);
 
+            plannerContainer.style.display = 'none';
+            loadingText.innerText = `Planning your trip to ${destination}...`;
+            loadingContainer.classList.add('show');
+
             console.log(`Destination: ${destination}`);
             console.log(`Departure Date: ${formattedDepartureDate}`);
             console.log(`Return Date: ${formattedReturnDate}`);
 
-            plannerContainer.style.display = 'none';
-            loadingText.innerText = `Going to ${destination} between ${formattedDepartureDate} to ${formattedReturnDate}`;
-            loadingContainer.classList.add('show');
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [{
+                            role: 'user',
+                            content: `Plan a trip to ${destination} from ${formattedDepartureDate} to ${formattedReturnDate}`
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                console.log(JSON.stringify(data, null, 2));
+
+                loadingText.innerText = `Your trip to ${destination} is planned! Check console for details.`;
+            } catch (error) {
+                console.error('Error:', error);
+                loadingText.innerText = 'There was an error planning your trip. Please try again.';
+            }
         });
     </script>
 </body>
