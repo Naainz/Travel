@@ -213,7 +213,7 @@
 
     <script>
         // change this to your OpenAI API key
-        const API_KEY = 'CHAGNE-THIS';
+        const API_KEY = 'YOUR-OPENAI-API-KEY';
 
         const starsContainer = document.getElementById('starsContainer');
         const starCount = Math.ceil(window.innerWidth / 40) * Math.ceil(window.innerHeight / 40) * 1.3;
@@ -267,59 +267,114 @@
                 .replace(/\n/gim, '<br />');
         }
 
-        planTripButton.addEventListener('click', async () => {
-            const destination = document.getElementById('destination').value;
-            const departureDate = new Date(document.getElementById('departure-date').value);
-            const returnDate = new Date(document.getElementById('return-date').value);
+    async function fetchAverageTemperature(destination, startDate, endDate) {
+    try {
+        const geoResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${destination}`);
+        const geoData = await geoResponse.json();
 
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            const formattedDepartureDate = departureDate.toLocaleDateString(undefined, options);
-            const formattedReturnDate = returnDate.toLocaleDateString(undefined, options);
+        if (!geoData.results || geoData.results.length === 0) {
+            throw new Error("Location not found.");
+        }
 
-            plannerContainer.style.display = 'none';
-            loadingText.innerText = `Planning your trip to ${destination}...`;
-            loadingContainer.classList.add('show');
+        const { latitude, longitude } = geoData.results[0];
 
-            console.log(`Destination: ${destination}`);
-            console.log(`Departure Date: ${formattedDepartureDate}`);
-            console.log(`Return Date: ${formattedReturnDate}`);
+        const weatherResponse = await fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`);
+        const weatherData = await weatherResponse.json();
 
-            try {
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: 'gpt-4o-mini',
-                        messages: [{
-                            role: 'user',
-                            content: `Plan a trip to ${destination} from ${formattedDepartureDate} to ${formattedReturnDate}`
-                        }]
-                    })
-                });
+        if (weatherData.error) {
+            throw new Error(weatherData.reason);
+        }
 
-                const data = await response.json();
-                console.log(JSON.stringify(data, null, 2));
+        if (!weatherData.daily || !weatherData.daily.temperature_2m_max || !weatherData.daily.temperature_2m_min) {
+            throw new Error("Temperature data not available for the given dates.");
+        }
 
-                const averageTemperature = '25C';
-
-                tripTitle.innerText = destination;
-                tripDates.innerText = `From ${formattedDepartureDate} to ${formattedReturnDate}`;
-                tripTemperature.innerText = `Temp: ${averageTemperature} in active season`;
-
-                const parsedContent = parseMarkdown(data.choices[0].message.content);
-                tripDetails.innerHTML = parsedContent;
-
-                loadingContainer.classList.remove('show');
-                tripInfoCard.style.display = 'block';
-
-            } catch (error) {
-                console.error('Error:', error);
-                loadingText.innerText = 'There was an error planning your trip. Please try again.';
-            }
+        const dailyTemperatures = weatherData.daily.temperature_2m_max.map((maxTemp, index) => {
+            const minTemp = weatherData.daily.temperature_2m_min[index];
+            return (maxTemp + minTemp) / 2;
         });
-    </script>
+
+        const averageTemperature = dailyTemperatures.reduce((sum, temp) => sum + temp, 0) / dailyTemperatures.length;
+
+        return Math.round(averageTemperature);
+    } catch (error) {
+        console.error("Error:", error.message);
+        throw new Error("Could not fetch temperature data.");
+    }
+}
+
+function adjustDateByOneYear(dateString, offset = -1) {
+    const date = new Date(dateString);
+    date.setFullYear(date.getFullYear() + offset);
+    return date.toISOString().split('T')[0];
+}
+
+planTripButton.addEventListener('click', async () => {
+    const destination = document.getElementById('destination').value;
+    const departureDate = new Date(document.getElementById('departure-date').value);
+    const returnDate = new Date(document.getElementById('return-date').value);
+
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDepartureDate = departureDate.toLocaleDateString(undefined, options);
+    const formattedReturnDate = returnDate.toLocaleDateString(undefined, options);
+
+    plannerContainer.style.display = 'none';
+    loadingText.innerText = `Planning your trip to ${destination}...`;
+    loadingContainer.classList.add('show');
+
+    console.log(`Destination: ${destination}`);
+    console.log(`Departure Date: ${formattedDepartureDate}`);
+    console.log(`Return Date: ${formattedReturnDate}`);
+
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        let startDate = departureDate.toISOString().split('T')[0];
+        let endDate = returnDate.toISOString().split('T')[0];
+        let averageTemperature;
+
+        if (startDate > today) {
+            startDate = adjustDateByOneYear(startDate);
+            endDate = adjustDateByOneYear(endDate);
+            averageTemperature = await fetchAverageTemperature(destination, startDate, endDate);
+            tripTemperature.innerText = `Estimated ${averageTemperature}°C`;
+        } else {
+            averageTemperature = await fetchAverageTemperature(destination, startDate, endDate);
+            tripTemperature.innerText = `Temp: ${averageTemperature}°F in active season`;
+        }
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [{
+                    role: 'user',
+                    content: `Plan a trip to ${destination} from ${formattedDepartureDate} to ${formattedReturnDate}`
+                }]
+            })
+        });
+
+        const data = await response.json();
+        console.log(JSON.stringify(data, null, 2));
+
+        tripTitle.innerText = destination;
+        tripDates.innerText = `From ${formattedDepartureDate} to ${formattedReturnDate}`;
+
+        const parsedContent = parseMarkdown(data.choices[0].message.content);
+        tripDetails.innerHTML = parsedContent;
+
+        loadingContainer.classList.remove('show');
+        tripInfoCard.style.display = 'block';
+
+    } catch (error) {
+        console.error('Error:', error.message);
+        loadingText.innerText = 'There was an error planning your trip. Please try again.';
+    }
+});
+
+</script>
 </body>
 </html>
