@@ -98,6 +98,31 @@
         .submit-btn:hover {
             background-color: #0056b3;
         }
+        .loading-container {
+            display: none;
+            text-align: center;
+        }
+        .loading-container.show {
+            display: block;
+        }
+        .loading-icon {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #ddd;
+            border-top: 4px solid #007BFF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            font-size: 16px;
+            color: #333;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -119,6 +144,11 @@
             <input type="date" id="return-date">
         </div>
         <button class="submit-btn" id="planTripButton">Plan My Trip</button>
+    </div>
+
+    <div class="loading-container" id="loadingContainer">
+        <div class="loading-icon"></div>
+        <div class="loading-text" id="loadingText"></div>
     </div>
 
     <script>
@@ -156,17 +186,25 @@
 
         const planTripButton = document.getElementById('planTripButton');
         const plannerContainer = document.getElementById('plannerContainer');
+        const loadingContainer = document.getElementById('loadingContainer');
+        const loadingText = document.getElementById('loadingText');
 
         planTripButton.addEventListener('click', () => {
             const destination = document.getElementById('destination').value;
-            const departureDate = document.getElementById('departure-date').value;
-            const returnDate = document.getElementById('return-date').value;
+            const departureDate = new Date(document.getElementById('departure-date').value);
+            const returnDate = new Date(document.getElementById('return-date').value);
+
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedDepartureDate = departureDate.toLocaleDateString(undefined, options);
+            const formattedReturnDate = returnDate.toLocaleDateString(undefined, options);
 
             console.log(`Destination: ${destination}`);
-            console.log(`Departure Date: ${departureDate}`);
-            console.log(`Return Date: ${returnDate}`);
+            console.log(`Departure Date: ${formattedDepartureDate}`);
+            console.log(`Return Date: ${formattedReturnDate}`);
 
             plannerContainer.style.display = 'none';
+            loadingText.innerText = `Going to ${destination} between ${formattedDepartureDate} to ${formattedReturnDate}`;
+            loadingContainer.classList.add('show');
         });
     </script>
 </body>
