@@ -20,6 +20,7 @@ cd Travel
 2. Click the "Plan my Trip" button.
 3. Wait, and the itinerary will be generated for you.
 
+
 ## Acknowledgements
 
 - [OpenAI](https://openai.com) for the GPT-4o-mini API.
