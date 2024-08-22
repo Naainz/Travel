@@ -45,6 +45,10 @@
             border-radius: 5px;
             border: 1px solid #ddd;
             box-sizing: border-box;
+            font-family: 'Satoshi', sans-serif;
+        }
+        .input-group input[type="text"]::placeholder {
+            font-family: 'Satoshi', sans-serif;
         }
         .input-group input[type="text"]:focus,
         .input-group input[type="date"]:focus {
@@ -60,6 +64,8 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+            font-family: 'Satoshi', sans-serif;
         }
         .submit-btn:hover {
             background-color: #0056b3;
@@ -71,11 +77,15 @@
         <h2>Travel Planner</h2>
         <div class="input-group">
             <label for="destination">Destination</label>
-            <input type="text" id="destination" placeholder="Enter destination">
+            <input type="text" id="destination" placeholder="Try: Seattle, WA">
         </div>
         <div class="input-group">
-            <label for="travel-date">Travel Date</label>
-            <input type="date" id="travel-date">
+            <label for="departure-date">Departure</label>
+            <input type="date" id="departure-date">
+        </div>
+        <div class="input-group">
+            <label for="return-date">Arrival</label>
+            <input type="date" id="return-date">
         </div>
         <button class="submit-btn">Plan My Trip</button>
     </div>
